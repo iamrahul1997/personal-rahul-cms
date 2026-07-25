@@ -58,13 +58,26 @@
   /* ---------------- GitHub API ---------------- */
   function gh(path, opts) {
     opts = opts || {};
+    var method = (opts.method || "GET").toUpperCase();
     opts.headers = Object.assign({
       Accept: "application/vnd.github+json",
       Authorization: "Bearer " + token(),
       "X-GitHub-Api-Version": "2022-11-28",
     }, opts.headers || {});
     return fetch(API + path, opts).then(function (res) {
-      if (res.status === 404) return null;
+      if (res.status === 404) {
+        /* For reads, 404 just means "file not there yet". For writes it
+           means the token can't touch the repo — GitHub hides repos it
+           won't authorize. Never treat that as success. */
+        if (method === "GET") return null;
+        throw new Error(
+          "GitHub returned 404 on a write — your token can't access " + OWNER + "/" + REPO +
+          ". Recreate it with Repository access: only personal-rahul, and Contents: Read and write, then run Settings → setup again."
+        );
+      }
+      if (res.status === 401) {
+        throw new Error("GitHub rejected the token (401 — revoked or expired). Run Settings → setup again with a fresh token.");
+      }
       if (!res.ok) return res.json().catch(function () { return {}; }).then(function (body) {
         throw new Error("GitHub " + res.status + ": " + (body.message || "request failed"));
       });
@@ -143,7 +156,13 @@
 
   function loadIndex() {
     return getFile("content/index.json").then(function (file) {
-      state.index = file ? JSON.parse(b64decode(file.content)) : [];
+      if (!file) {
+        throw new Error(
+          "Couldn't read the article list from " + OWNER + "/" + REPO +
+          " — the token probably lacks access to the repo. Check Settings."
+        );
+      }
+      state.index = JSON.parse(b64decode(file.content));
       return state.index;
     });
   }
