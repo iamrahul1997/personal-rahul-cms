@@ -380,13 +380,24 @@
       if (!user || !pass) return setStatus("login-status", "Enter your username and password.", true);
       setStatus("login-status", "Signing in…");
       fetchAuthBlob().then(function (blob) {
-        if (!blob) return setStatus("login-status", "No login is set up yet — go to Settings.", true);
+        if (!blob) {
+          return setStatus("login-status",
+            "No login has been created yet. Go to Settings, paste your GitHub token, choose a password, and click “Create login & connect”.", true);
+        }
         if (blob.user !== user) { setStatus("login-status", "Wrong username or password.", true); return; }
         decryptToken(blob, pass).then(function (tok) {
           sessionStorage.setItem(SESSION_KEY, tok);
-          setStatus("login-status", "");
-          $("login-pass").value = "";
-          goList();
+          setStatus("login-status", "Checking GitHub access…");
+          return gh("/repos/" + OWNER + "/" + REPO).then(function (repo) {
+            if (!repo) throw new Error("no-access");
+            setStatus("login-status", "");
+            $("login-pass").value = "";
+            goList();
+          }).catch(function () {
+            sessionStorage.removeItem(SESSION_KEY);
+            setStatus("login-status",
+              "Password correct, but the saved GitHub token no longer works (revoked or expired). Go to Settings and run setup again with a fresh token.", true);
+          });
         }).catch(function () {
           setStatus("login-status", "Wrong username or password.", true);
         });
