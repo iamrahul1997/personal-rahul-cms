@@ -332,7 +332,11 @@
           if (entry.featured) list.forEach(function (a) { if (a.slug !== slug) a.featured = false; });
           return putText("content/index.json", JSON.stringify(list, null, 2) + "\n", "CMS: update index for " + slug).then(function () {
             setStatus("editor-status", "Updating sitemap…");
-            return putText("sitemap.xml", sitemapXML(list), "CMS: update sitemap");
+            /* Sitemap is nice-to-have — never let it fail a publish. It
+               regenerates fully on the next publish or delete anyway. */
+            return putText("sitemap.xml", sitemapXML(list), "CMS: update sitemap").catch(function () {
+              toast("Published fine — sitemap update skipped, it will refresh on the next publish.");
+            });
           });
         });
       })
@@ -351,20 +355,29 @@
   }
 
   function removeArticle(slug) {
+    if (state.deleting) return;
     if (!confirm("Delete “" + slug + "” from the site? This removes the page and the article data.")) return;
-    setStatus("list-status", "Deleting…");
+    state.deleting = true;
+    setStatus("list-status", "Removing from the article list…");
     loadIndex()
       .then(function (list) {
         var next = list.filter(function (a) { return a.slug !== slug; });
         return putText("content/index.json", JSON.stringify(next, null, 2) + "\n", "CMS: remove " + slug + " from index").then(function () {
-          return putText("sitemap.xml", sitemapXML(next), "CMS: update sitemap");
+          setStatus("list-status", "Updating sitemap…");
+          /* Never let the sitemap block a delete — it self-heals on the
+             next publish or delete. */
+          return putText("sitemap.xml", sitemapXML(next), "CMS: update sitemap").catch(function () {});
         });
       })
-      .then(function () { return deletePath("content/articles/" + slug + ".json", "CMS: delete content for " + slug); })
+      .then(function () {
+        setStatus("list-status", "Deleting article files…");
+        return deletePath("content/articles/" + slug + ".json", "CMS: delete content for " + slug);
+      })
       .then(function () { return deletePath("articles/" + slug + ".html", "CMS: delete page for " + slug); })
       .then(function () { return loadIndex(); })
-      .then(function () { renderList(); setStatus("list-status", "Deleted. Vercel is redeploying the site."); toast("Deleted — site is redeploying."); })
-      .catch(function (e) { setStatus("list-status", e.message, true); toast("❌ Delete failed: " + e.message, true); });
+      .then(function () { renderList(); setStatus("list-status", ""); toast("🗑️ Deleted — the site is redeploying, gone in ~30 seconds."); })
+      .catch(function (e) { setStatus("list-status", e.message, true); toast("❌ Delete failed: " + e.message, true); })
+      .then(function () { state.deleting = false; });
   }
 
   /* ---------------- wiring ---------------- */
