@@ -337,11 +337,11 @@
         });
       })
       .then(function () {
-        setStatus("editor-status", "✅ Published! Vercel is deploying — live in ~30 seconds at /articles/" + slug);
         toast("✅ Published! Live in ~30 seconds at /articles/" + slug);
-        state.editing = slug;
-        $("f-slug").disabled = true;
+        state.editing = null;
         state.imageFile = null;
+        state.imagePath = null;
+        goList();
       })
       .catch(function (e) {
         setStatus("editor-status", e.message, true);
