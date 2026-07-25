@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <title>Rahul's CMS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&display=swap"
+      rel="stylesheet"
+    />
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet" />
+    <link rel="stylesheet" href="cms.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <span class="mark">RP</span>
+        <strong>Rahul's CMS</strong>
+        <span class="topbar-repo" id="repo-label">→ iamrahul1997/personal-rahul</span>
+        <nav>
+          <button id="nav-articles" class="top-btn" type="button">Articles</button>
+          <button id="nav-settings" class="top-btn" type="button">Settings</button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="shell">
+      <!-- ============ SETTINGS ============ -->
+      <section id="view-settings" class="view" hidden>
+        <h1>Settings</h1>
+        <p class="hint">
+          The CMS publishes by committing to your <code>personal-rahul</code> GitHub repo.
+          It needs a fine-grained personal access token with <strong>Contents: Read and write</strong>
+          on that one repo. Create one at
+          <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a>.
+          The token is stored only in this browser.
+        </p>
+        <div class="field">
+          <label for="token">GitHub token</label>
+          <input id="token" type="password" placeholder="github_pat_…" autocomplete="off" />
+        </div>
+        <div class="row">
+          <button id="save-token" class="btn btn-primary" type="button">Save token</button>
+          <button id="test-token" class="btn" type="button">Test connection</button>
+        </div>
+        <p id="settings-status" class="status" role="status"></p>
+      </section>
+
+      <!-- ============ ARTICLE LIST ============ -->
+      <section id="view-list" class="view" hidden>
+        <div class="list-head">
+          <h1>Articles</h1>
+          <button id="new-article" class="btn btn-primary" type="button">+ New article</button>
+        </div>
+        <div id="article-rows" class="rows"></div>
+        <p id="list-status" class="status" role="status"></p>
+      </section>
+
+      <!-- ============ EDITOR ============ -->
+      <section id="view-editor" class="view" hidden>
+        <div class="list-head">
+          <h1 id="editor-title">New article</h1>
+          <div class="row">
+            <button id="back-to-list" class="btn" type="button">← Back</button>
+            <button id="publish" class="btn btn-primary" type="button">Publish</button>
+          </div>
+        </div>
+
+        <div class="editor-grid">
+          <div class="editor-main">
+            <div class="field">
+              <label for="f-title">Title</label>
+              <input id="f-title" type="text" placeholder="Your headline" />
+            </div>
+            <div class="field">
+              <label for="f-slug">Slug <span class="soft">(the URL: /articles/…)</span></label>
+              <input id="f-slug" type="text" placeholder="auto-generated-from-title" />
+            </div>
+            <div class="field">
+              <label>Content</label>
+              <div id="quill"></div>
+            </div>
+          </div>
+
+          <aside class="editor-side">
+            <div class="panel">
+              <h3>Category</h3>
+              <div class="field">
+                <select id="f-category"></select>
+              </div>
+              <div class="field">
+                <label for="f-new-category">…or create a new one</label>
+                <input id="f-new-category" type="text" placeholder="e.g. Economy" />
+              </div>
+            </div>
+
+            <div class="panel">
+              <h3>Feature image</h3>
+              <input id="f-image" type="file" accept="image/*" />
+              <img id="image-preview" class="img-preview" hidden alt="" />
+              <p class="soft" id="image-note"></p>
+            </div>
+
+            <div class="panel">
+              <h3>Details</h3>
+              <div class="field">
+                <label for="f-date">Date label</label>
+                <input id="f-date" type="text" placeholder="July 2026" />
+              </div>
+              <div class="field">
+                <label for="f-minutes">Read time (minutes, blank = auto)</label>
+                <input id="f-minutes" type="number" min="1" />
+              </div>
+              <div class="field">
+                <label for="f-excerpt">Excerpt (card teaser)</label>
+                <textarea id="f-excerpt" rows="3"></textarea>
+              </div>
+              <label class="check"><input id="f-featured" type="checkbox" /> Featured essay (big card)</label>
+            </div>
+
+            <div class="panel">
+              <h3>SEO</h3>
+              <div class="field">
+                <label for="f-meta-title">Meta title</label>
+                <input id="f-meta-title" type="text" placeholder="Defaults to: Title — Rahul Poudel" />
+              </div>
+              <div class="field">
+                <label for="f-meta-desc">Meta description</label>
+                <textarea id="f-meta-desc" rows="3" placeholder="Defaults to the excerpt"></textarea>
+              </div>
+            </div>
+          </aside>
+        </div>
+        <p id="editor-status" class="status" role="status"></p>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
