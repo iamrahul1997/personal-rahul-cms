@@ -17,9 +17,20 @@ GitHub API from your browser. Your token never leaves your machine.
    [github.com/settings/personal-access-tokens/new](https://github.com/settings/personal-access-tokens/new):
    - Repository access: **Only select repositories → `personal-rahul`**
    - Permissions: **Contents → Read and write**
-3. Open your deployed CMS → **Settings** → paste the token → **Test connection**.
+3. Open your deployed CMS → it shows **Set up your login** → paste the token,
+   choose a username (default `admin`) and a strong password → **Create login & connect**.
 
-That's it. The token is stored in your browser's localStorage only.
+From then on you sign in with just the username + password, from any device.
+
+## How the login works
+
+Your password never gets stored anywhere. At setup, the CMS encrypts the
+GitHub token with your password (PBKDF2 → AES-256-GCM, all in your browser)
+and commits only the encrypted blob to the site repo (`cms/auth.json`).
+Signing in downloads that blob and decrypts it locally; the token lives in
+sessionStorage until you close the tab or log out. Wrong password = failed
+decryption = no access. To change the password (or rotate the token), just
+run Settings → setup again.
 
 ## What Publish does
 

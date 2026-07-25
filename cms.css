@@ -13,6 +13,7 @@
   --mono: "DM Mono", monospace;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--body); }
 a { color: var(--moss); }
 h1 { font-family: var(--display); font-weight: 600; letter-spacing: -.03em; font-size: 2.2rem; margin: 0; }
@@ -71,6 +72,12 @@ code { font-family: var(--mono); font-size: .85em; background: var(--mist); padd
 .ql-container.ql-snow { border: 1.5px solid var(--line); border-top: 0; border-radius: 0 0 .7rem .7rem; font-family: var(--body); }
 .ql-editor h2 { font-family: var(--display); }
 .ql-editor blockquote { border-left: 3px solid var(--coral); font-family: var(--display); font-style: italic; font-size: 1.2em; }
+
+.login-view { display: grid; place-items: center; min-height: 60vh; }
+.login-card { width: min(420px, 100%); background: #fff; border: 1px solid var(--line); border-radius: 1.1rem; padding: 2rem; }
+.login-card h1 { font-size: 1.8rem; margin-bottom: .3rem; }
+.login-card .hint { margin: 0 0 1.4rem; font-size: .85rem; }
+.login-card .btn { width: 100%; margin-top: .4rem; }
 
 @media (max-width: 860px) {
   .editor-grid { grid-template-columns: 1fr; }

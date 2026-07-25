@@ -12,12 +12,17 @@
   var API = "https://api.github.com";
   var TOKEN_KEY = "cms_gh_token";
 
+  var AUTH_PATH = "cms/auth.json";
+  var SESSION_KEY = "cms_session_token";
+
   var state = { index: [], editing: null, imageFile: null, imagePath: null };
   var quill = null;
 
   /* ---------------- helpers ---------------- */
   function $(id) { return document.getElementById(id); }
-  function token() { return localStorage.getItem(TOKEN_KEY) || ""; }
+  function token() {
+    return sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(TOKEN_KEY) || "";
+  }
   function b64encode(str) { return btoa(unescape(encodeURIComponent(str))); }
   function b64decode(b64) { return decodeURIComponent(escape(atob(b64.replace(/\n/g, "")))); }
   function esc(s) {
@@ -77,11 +82,48 @@
     });
   }
 
+  /* ---------------- password auth (AES-GCM over the token) ---------------- */
+  function bufToB64(buf) { return btoa(String.fromCharCode.apply(null, new Uint8Array(buf))); }
+  function b64ToBuf(b64) {
+    var bin = atob(b64), arr = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return arr;
+  }
+  function deriveKey(password, salt) {
+    return crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"])
+      .then(function (base) {
+        return crypto.subtle.deriveKey(
+          { name: "PBKDF2", salt: salt, iterations: 200000, hash: "SHA-256" },
+          base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]
+        );
+      });
+  }
+  function encryptToken(tok, username, password) {
+    var salt = crypto.getRandomValues(new Uint8Array(16));
+    var iv = crypto.getRandomValues(new Uint8Array(12));
+    return deriveKey(password, salt).then(function (key) {
+      return crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, new TextEncoder().encode(tok));
+    }).then(function (data) {
+      return { v: 1, user: username, salt: bufToB64(salt), iv: bufToB64(iv), data: bufToB64(data) };
+    });
+  }
+  function decryptToken(blob, password) {
+    return deriveKey(password, b64ToBuf(blob.salt)).then(function (key) {
+      return crypto.subtle.decrypt({ name: "AES-GCM", iv: b64ToBuf(blob.iv) }, key, b64ToBuf(blob.data));
+    }).then(function (buf) { return new TextDecoder().decode(buf); });
+  }
+  function fetchAuthBlob() {
+    return fetch("https://raw.githubusercontent.com/" + OWNER + "/" + REPO + "/" + BRANCH + "/" + AUTH_PATH + "?t=" + Date.now())
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; });
+  }
+
   /* ---------------- views ---------------- */
   function show(view) {
-    ["view-settings", "view-list", "view-editor"].forEach(function (v) {
+    ["view-login", "view-settings", "view-list", "view-editor"].forEach(function (v) {
       $(v).hidden = v !== view;
     });
+    $("nav-logout").hidden = !sessionStorage.getItem(SESSION_KEY);
   }
 
   function loadIndex() {
@@ -320,19 +362,68 @@
     });
 
     $("nav-articles").onclick = goList;
-    $("nav-settings").onclick = function () {
-      $("token").value = token();
-      show("view-settings");
+    $("nav-settings").onclick = function () { show("view-settings"); };
+    $("nav-logout").onclick = function () {
+      sessionStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(TOKEN_KEY);
+      show("view-login");
     };
-    $("save-token").onclick = function () {
-      localStorage.setItem(TOKEN_KEY, $("token").value.trim());
-      setStatus("settings-status", "Token saved in this browser.");
+
+    $("login-btn").onclick = function () {
+      var user = $("login-user").value.trim();
+      var pass = $("login-pass").value;
+      if (!user || !pass) return setStatus("login-status", "Enter your username and password.", true);
+      setStatus("login-status", "Signing in…");
+      fetchAuthBlob().then(function (blob) {
+        if (!blob) return setStatus("login-status", "No login is set up yet — go to Settings.", true);
+        if (blob.user !== user) { setStatus("login-status", "Wrong username or password.", true); return; }
+        decryptToken(blob, pass).then(function (tok) {
+          sessionStorage.setItem(SESSION_KEY, tok);
+          setStatus("login-status", "");
+          $("login-pass").value = "";
+          goList();
+        }).catch(function () {
+          setStatus("login-status", "Wrong username or password.", true);
+        });
+      });
     };
-    $("test-token").onclick = function () {
-      setStatus("settings-status", "Testing…");
-      localStorage.setItem(TOKEN_KEY, $("token").value.trim());
+    $("login-pass").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") $("login-btn").click();
+    });
+
+    $("setup-save").onclick = function () {
+      var tok = $("token").value.trim();
+      var user = $("setup-user").value.trim() || "admin";
+      var pass = $("setup-pass").value;
+      if (!tok) return setStatus("settings-status", "Paste your GitHub token first.", true);
+      if (pass.length < 8) return setStatus("settings-status", "Password must be at least 8 characters.", true);
+      if (pass !== $("setup-pass2").value) return setStatus("settings-status", "Passwords don't match.", true);
+      setStatus("settings-status", "Checking token…");
+      sessionStorage.setItem(SESSION_KEY, tok);
       gh("/repos/" + OWNER + "/" + REPO).then(function (repo) {
-        setStatus("settings-status", repo ? "✅ Connected to " + repo.full_name : "Repo not found — token may lack access.", !repo);
+        if (!repo) throw new Error("Token can't see " + OWNER + "/" + REPO + " — check its repository access.");
+        setStatus("settings-status", "Encrypting and saving your login…");
+        return encryptToken(tok, user, pass);
+      }).then(function (blob) {
+        return putText(AUTH_PATH, JSON.stringify(blob, null, 2) + "\n", "CMS: update login");
+      }).then(function () {
+        $("token").value = ""; $("setup-pass").value = ""; $("setup-pass2").value = "";
+        setStatus("settings-status", "✅ Login created. You're signed in — next time just use your password.");
+        goList();
+      }).catch(function (e) {
+        sessionStorage.removeItem(SESSION_KEY);
+        setStatus("settings-status", e.message, true);
+      });
+    };
+
+    $("test-token").onclick = function () {
+      var tok = $("token").value.trim();
+      if (!tok) return setStatus("settings-status", "Paste a token to test.", true);
+      setStatus("settings-status", "Testing…");
+      fetch(API + "/repos/" + OWNER + "/" + REPO, {
+        headers: { Accept: "application/vnd.github+json", Authorization: "Bearer " + tok },
+      }).then(function (r) {
+        setStatus("settings-status", r.ok ? "✅ Token works for " + OWNER + "/" + REPO : "Token rejected (" + r.status + ").", !r.ok);
       }).catch(function (e) { setStatus("settings-status", e.message, true); });
     };
     $("new-article").onclick = function () { openEditor(null); };
@@ -361,6 +452,12 @@
       }
     });
 
-    if (token()) goList(); else show("view-settings");
+    if (token()) {
+      goList();
+    } else {
+      fetchAuthBlob().then(function (blob) {
+        show(blob ? "view-login" : "view-settings");
+      });
+    }
   });
 })();
