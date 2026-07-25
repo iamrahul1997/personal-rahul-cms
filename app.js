@@ -208,8 +208,24 @@
     var cover = doc.image
       ? '\n      <div class="section-shell">\n        <img class="article-cover" src="' + doc.image + '" alt="" />\n      </div>'
       : "";
-    var og = doc.image ? '\n    <meta property="og:image" content="' + SITE_URL + doc.image + '" />' : "";
+    var canonical = SITE_URL + "/articles/" + doc.slug;
+    var ogImg = SITE_URL + (doc.image || "/assets/rahul-lake.jpg");
+    var og =
+      '\n    <link rel="canonical" href="' + canonical + '" />' +
+      '\n    <meta property="og:type" content="article" />' +
+      '\n    <meta property="og:url" content="' + canonical + '" />' +
+      '\n    <meta property="og:image" content="' + ogImg + '" />' +
+      '\n    <meta name="twitter:card" content="summary_large_image" />';
     return '<!doctype html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <meta name="description" content="' + esc(metaDesc) + '" />\n    <title>' + esc(metaTitle) + '</title>\n    <meta property="og:title" content="' + esc(metaTitle) + '" />\n    <meta property="og:description" content="' + esc(metaDesc) + '" />' + og + '\n    <link rel="preconnect" href="https://fonts.googleapis.com" />\n    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />\n    <link\n      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&display=swap"\n      rel="stylesheet"\n    />\n    <link rel="icon" type="image/jpeg" href="../assets/rahul-portrait.jpg" />\n    <link rel="stylesheet" href="../styles.css" />\n  </head>\n  <body>\n    <a class="skip-link" href="#main">Skip to content</a>\n\n    <div class="nav-wrap">\n      <header class="site-header">\n        <a class="brand" href="/" aria-label="Rahul Poudel home">\n          <img class="brand-mark" src="../assets/rahul-portrait.jpg" alt="" />\n          <span>Rahul Poudel</span>\n        </a>\n        <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="primary-nav">\n          <span></span><span></span>\n          <span class="sr-only">Open menu</span>\n        </button>\n        <nav id="primary-nav" class="primary-nav" aria-label="Primary navigation">\n          <a href="/">Home</a>\n          <a href="/writing" aria-current="page">Writing</a>\n          <a href="/about">About</a>\n          <a href="/contact" class="nav-cta">Let\'s talk <span aria-hidden="true">↗</span></a>\n        </nav>\n      </header>\n    </div>\n\n    <main id="main">\n      <header class="article-hero section-shell">\n        <p class="eyebrow">' + esc(doc.category) + '</p>\n        <h1>' + esc(doc.title) + '</h1>\n        <div class="article-byline">\n          <span>By Rahul Poudel</span><span class="dot"></span>\n          <span>' + esc(doc.date) + '</span><span class="dot"></span>\n          <span>' + doc.minutes + ' min read</span>\n        </div>\n      </header>' + cover + '\n\n      <article class="article-body section-shell">\n' + doc.html + '\n      </article>\n\n      <div class="article-footer section-shell">\n        <a class="text-link" href="/writing"><span aria-hidden="true">←</span> All writing</a>\n        <a class="text-link" href="/contact">Discuss this essay <span aria-hidden="true">→</span></a>\n      </div>\n    </main>\n\n    <!-- ===== Newsletter ===== -->\n    <section class="newsletter">\n      <div class="halftone ht-news" aria-hidden="true"></div>\n      <div class="section-shell newsletter-inner" data-reveal>\n        <p class="eyebrow">Newsletter</p>\n        <h2>Get new essays in your inbox.</h2>\n        <p class="newsletter-blurb">No spam. Just geopolitics, technology, and Nepal—when there\'s something worth reading.</p>\n        <form class="newsletter-form" data-newsletter novalidate>\n          <label class="sr-only" for="nl-email">Email address</label>\n          <input id="nl-email" name="email" type="email" required placeholder="you@example.com" autocomplete="email" />\n          <button class="button button-primary" type="submit">Subscribe</button>\n        </form>\n        <p class="form-note" role="status" aria-live="polite"></p>\n      </div>\n    </section>\n\n    <footer class="site-footer">\n      <div class="section-shell footer-inner">\n        <div>\n          <a class="brand" href="/"><img class="brand-mark" src="../assets/rahul-portrait.jpg" alt="" /><span>Rahul Poudel</span></a>\n          <p>Global affairs, Nepal, and technology. © <span id="year"></span> Rahul Poudel</p>\n        </div>\n        <nav aria-label="Footer">\n          <a href="/writing">Writing</a>\n          <a href="/about">About</a>\n          <a href="/contact">Contact</a>\n          <a href="https://instagram.com/rahul.poudel_" target="_blank" rel="noopener">Instagram <span aria-hidden="true">↗</span></a>\n          <a href="https://github.com/iamrahul1997" target="_blank" rel="noopener">GitHub <span aria-hidden="true">↗</span></a>\n        </nav>\n      </div>\n    </footer>\n\n    <script src="../script.js"></script>\n  </body>\n</html>\n';
+  }
+
+  /* ---------------- sitemap ---------------- */
+  function sitemapXML(list) {
+    var urls = ["/", "/writing", "/about", "/contact"].map(function (p) { return SITE_URL + p; });
+    list.forEach(function (a) { urls.push(SITE_URL + "/articles/" + a.slug); });
+    return '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+      urls.map(function (u) { return "  <url><loc>" + u + "</loc></url>"; }).join("\n") +
+      "\n</urlset>\n";
   }
 
   /* ---------------- publish pipeline ---------------- */
@@ -285,7 +301,10 @@
           var i = list.findIndex(function (a) { return a.slug === slug; });
           if (i >= 0) list[i] = entry; else list.unshift(entry);
           if (entry.featured) list.forEach(function (a) { if (a.slug !== slug) a.featured = false; });
-          return putText("content/index.json", JSON.stringify(list, null, 2) + "\n", "CMS: update index for " + slug);
+          return putText("content/index.json", JSON.stringify(list, null, 2) + "\n", "CMS: update index for " + slug).then(function () {
+            setStatus("editor-status", "Updating sitemap…");
+            return putText("sitemap.xml", sitemapXML(list), "CMS: update sitemap");
+          });
         });
       })
       .then(function () {
@@ -304,7 +323,9 @@
     loadIndex()
       .then(function (list) {
         var next = list.filter(function (a) { return a.slug !== slug; });
-        return putText("content/index.json", JSON.stringify(next, null, 2) + "\n", "CMS: remove " + slug + " from index");
+        return putText("content/index.json", JSON.stringify(next, null, 2) + "\n", "CMS: remove " + slug + " from index").then(function () {
+          return putText("sitemap.xml", sitemapXML(next), "CMS: update sitemap");
+        });
       })
       .then(function () { return deletePath("content/articles/" + slug + ".json", "CMS: delete content for " + slug); })
       .then(function () { return deletePath("articles/" + slug + ".html", "CMS: delete page for " + slug); })
