@@ -9,6 +9,11 @@
   var OWNER = "iamrahul1997";
   var REPO = "personal-rahul";
   var BRANCH = "main";
+  /* The site's public address. When your custom domain is live, change
+     this ONE line (e.g. "https://poudelrahul.com.np") — it only affects
+     "View" links, image previews, and og:image URLs on NEW publishes.
+     Nothing else in the CMS or site depends on the domain. */
+  var SITE_URL = "https://personal-rahul.vercel.app";
   var API = "https://api.github.com";
   var TOKEN_KEY = "cms_gh_token";
 
@@ -144,7 +149,7 @@
         '<div class="meta">' + esc(a.category) + " · " + esc(a.date) + " · " + a.minutes + " min</div></div>" +
         (a.featured ? '<span class="badge">Featured</span>' : "") +
         '<span class="spacer"></span>' +
-        '<a class="btn" href="https://personal-rahul.vercel.app/articles/' + a.slug + '" target="_blank" rel="noopener">View</a>' +
+        '<a class="btn" href="' + SITE_URL + '/articles/' + a.slug + '" target="_blank" rel="noopener">View</a>' +
         '<button class="btn" data-edit="' + a.slug + '" type="button">Edit</button>' +
         '<button class="btn btn-danger" data-del="' + a.slug + '" type="button">Delete</button>';
       box.appendChild(row);
@@ -180,7 +185,7 @@
     $("f-new-category").value = "";
     categoryOptions(article ? article.category : undefined);
     $("image-preview").hidden = !state.imagePath;
-    if (state.imagePath) $("image-preview").src = "https://personal-rahul.vercel.app" + state.imagePath;
+    if (state.imagePath) $("image-preview").src = SITE_URL + state.imagePath;
     $("image-note").textContent = state.imagePath ? "Current image shown. Choose a file to replace it." : "";
     $("f-image").value = "";
     quill.setContents([]);
@@ -203,7 +208,7 @@
     var cover = doc.image
       ? '\n      <div class="section-shell">\n        <img class="article-cover" src="' + doc.image + '" alt="" />\n      </div>'
       : "";
-    var og = doc.image ? '\n    <meta property="og:image" content="https://personal-rahul.vercel.app' + doc.image + '" />' : "";
+    var og = doc.image ? '\n    <meta property="og:image" content="' + SITE_URL + doc.image + '" />' : "";
     return '<!doctype html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <meta name="description" content="' + esc(metaDesc) + '" />\n    <title>' + esc(metaTitle) + '</title>\n    <meta property="og:title" content="' + esc(metaTitle) + '" />\n    <meta property="og:description" content="' + esc(metaDesc) + '" />' + og + '\n    <link rel="preconnect" href="https://fonts.googleapis.com" />\n    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />\n    <link\n      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&display=swap"\n      rel="stylesheet"\n    />\n    <link rel="icon" type="image/jpeg" href="../assets/rahul-portrait.jpg" />\n    <link rel="stylesheet" href="../styles.css" />\n  </head>\n  <body>\n    <a class="skip-link" href="#main">Skip to content</a>\n\n    <div class="nav-wrap">\n      <header class="site-header">\n        <a class="brand" href="/" aria-label="Rahul Poudel home">\n          <img class="brand-mark" src="../assets/rahul-portrait.jpg" alt="" />\n          <span>Rahul Poudel</span>\n        </a>\n        <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="primary-nav">\n          <span></span><span></span>\n          <span class="sr-only">Open menu</span>\n        </button>\n        <nav id="primary-nav" class="primary-nav" aria-label="Primary navigation">\n          <a href="/">Home</a>\n          <a href="/writing" aria-current="page">Writing</a>\n          <a href="/about">About</a>\n          <a href="/contact" class="nav-cta">Let\'s talk <span aria-hidden="true">↗</span></a>\n        </nav>\n      </header>\n    </div>\n\n    <main id="main">\n      <header class="article-hero section-shell">\n        <p class="eyebrow">' + esc(doc.category) + '</p>\n        <h1>' + esc(doc.title) + '</h1>\n        <div class="article-byline">\n          <span>By Rahul Poudel</span><span class="dot"></span>\n          <span>' + esc(doc.date) + '</span><span class="dot"></span>\n          <span>' + doc.minutes + ' min read</span>\n        </div>\n      </header>' + cover + '\n\n      <article class="article-body section-shell">\n' + doc.html + '\n      </article>\n\n      <div class="article-footer section-shell">\n        <a class="text-link" href="/writing"><span aria-hidden="true">←</span> All writing</a>\n        <a class="text-link" href="/contact">Discuss this essay <span aria-hidden="true">→</span></a>\n      </div>\n    </main>\n\n    <!-- ===== Newsletter ===== -->\n    <section class="newsletter">\n      <div class="halftone ht-news" aria-hidden="true"></div>\n      <div class="section-shell newsletter-inner" data-reveal>\n        <p class="eyebrow">Newsletter</p>\n        <h2>Get new essays in your inbox.</h2>\n        <p class="newsletter-blurb">No spam. Just geopolitics, technology, and Nepal—when there\'s something worth reading.</p>\n        <form class="newsletter-form" data-newsletter novalidate>\n          <label class="sr-only" for="nl-email">Email address</label>\n          <input id="nl-email" name="email" type="email" required placeholder="you@example.com" autocomplete="email" />\n          <button class="button button-primary" type="submit">Subscribe</button>\n        </form>\n        <p class="form-note" role="status" aria-live="polite"></p>\n      </div>\n    </section>\n\n    <footer class="site-footer">\n      <div class="section-shell footer-inner">\n        <div>\n          <a class="brand" href="/"><img class="brand-mark" src="../assets/rahul-portrait.jpg" alt="" /><span>Rahul Poudel</span></a>\n          <p>Global affairs, Nepal, and technology. © <span id="year"></span> Rahul Poudel</p>\n        </div>\n        <nav aria-label="Footer">\n          <a href="/writing">Writing</a>\n          <a href="/about">About</a>\n          <a href="/contact">Contact</a>\n          <a href="https://instagram.com/rahul.poudel_" target="_blank" rel="noopener">Instagram <span aria-hidden="true">↗</span></a>\n          <a href="https://github.com/iamrahul1997" target="_blank" rel="noopener">GitHub <span aria-hidden="true">↗</span></a>\n        </nav>\n      </div>\n    </footer>\n\n    <script src="../script.js"></script>\n  </body>\n</html>\n';
   }
 
