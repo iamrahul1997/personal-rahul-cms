@@ -73,6 +73,9 @@ code { font-family: var(--mono); font-size: .85em; background: var(--mist); padd
 .ql-editor h2 { font-family: var(--display); }
 .ql-editor blockquote { border-left: 3px solid var(--coral); font-family: var(--display); font-style: italic; font-size: 1.2em; }
 
+.toast { position: fixed; right: 1rem; bottom: 1rem; z-index: 60; max-width: 400px; padding: 1rem 1.3rem; border-radius: .9rem; background: var(--moss); color: #fff; font: 600 .95rem var(--body); box-shadow: 0 14px 44px rgba(16,37,31,.35); }
+.toast.error { background: var(--coral); }
+
 .login-view { display: grid; place-items: center; min-height: 60vh; }
 .login-card { width: min(420px, 100%); background: #fff; border: 1px solid var(--line); border-radius: 1.1rem; padding: 2rem; }
 .login-card h1 { font-size: 1.8rem; margin-bottom: .3rem; }

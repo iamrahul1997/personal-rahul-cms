@@ -41,6 +41,16 @@
     el.textContent = msg || "";
     el.classList.toggle("error", !!isError);
   }
+  function toast(msg, isError) {
+    var old = document.querySelector(".toast");
+    if (old) old.remove();
+    var el = document.createElement("div");
+    el.className = "toast" + (isError ? " error" : "");
+    el.setAttribute("role", "alert");
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(function () { el.remove(); }, isError ? 12000 : 6000);
+  }
   function monthYear() {
     return new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" });
   }
@@ -309,11 +319,15 @@
       })
       .then(function () {
         setStatus("editor-status", "✅ Published! Vercel is deploying — live in ~30 seconds at /articles/" + slug);
+        toast("✅ Published! Live in ~30 seconds at /articles/" + slug);
         state.editing = slug;
         $("f-slug").disabled = true;
         state.imageFile = null;
       })
-      .catch(function (e) { setStatus("editor-status", e.message, true); })
+      .catch(function (e) {
+        setStatus("editor-status", e.message, true);
+        toast("❌ Publish failed: " + e.message, true);
+      })
       .then(function () { btn.disabled = false; });
   }
 
@@ -330,8 +344,8 @@
       .then(function () { return deletePath("content/articles/" + slug + ".json", "CMS: delete content for " + slug); })
       .then(function () { return deletePath("articles/" + slug + ".html", "CMS: delete page for " + slug); })
       .then(function () { return loadIndex(); })
-      .then(function () { renderList(); setStatus("list-status", "Deleted. Vercel is redeploying the site."); })
-      .catch(function (e) { setStatus("list-status", e.message, true); });
+      .then(function () { renderList(); setStatus("list-status", "Deleted. Vercel is redeploying the site."); toast("Deleted — site is redeploying."); })
+      .catch(function (e) { setStatus("list-status", e.message, true); toast("❌ Delete failed: " + e.message, true); });
   }
 
   /* ---------------- wiring ---------------- */
